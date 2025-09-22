@@ -1,0 +1,21 @@
+model:
+  generator_instruct: "tiiuae/falcon-7b-instruct"
+  generator_large: "tiiuae/falcon-40b-instruct"
+  embedding: "sentence-transformers/all-mpnet-base-v2"
+  cross_encoder: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+  verifier_1: "facebook/bart-large-mnli"
+  verifier_2: "valhalla/distilbart-mnli-12-1"
+  asr: "openai/whisper-small"
+
+data:
+  raw_dir: "data/sources"
+  processed_dir: "data/processed"
+  index_path: "data/faiss_index.bin"
+  docs_jsonl: "data/processed/docs.jsonl"
+
+inference:
+  k_retrieval: 10
+  rerank_top_k: 20
+  max_tokens: 512
+  temperature: 0.0
+  verifier_threshold: 0.65

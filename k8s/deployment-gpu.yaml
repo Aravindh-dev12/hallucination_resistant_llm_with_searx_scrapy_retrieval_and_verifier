@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rag-verify
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rag-verify
+  template:
+    metadata:
+      labels:
+        app: rag-verify
+    spec:
+      containers:
+      - name: rag-verify
+        image: YOUR_REGISTRY/rag-verify:latest
+        ports:
+        - containerPort: 7860
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+        volumeMounts:
+        - name: data
+          mountPath: /app/data
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: faiss-pvc
