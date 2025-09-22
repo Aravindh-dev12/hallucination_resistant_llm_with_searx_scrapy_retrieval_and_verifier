@@ -1,0 +1,9 @@
+# GPU Dockerfile (example)
+FROM nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
+RUN apt-get update && apt-get install -y build-essential ffmpeg git libsndfile1 python3-pip python3-venv && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY . /app
+RUN python3 -m pip install --upgrade pip setuptools wheel
+RUN pip install --no-cache-dir -r requirements.txt
+EXPOSE 7860
+CMD ["python3", "src/ui.py"]
