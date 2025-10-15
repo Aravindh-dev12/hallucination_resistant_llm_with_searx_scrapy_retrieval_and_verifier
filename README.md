@@ -1,3 +1,5 @@
+
+
 Hallucination-Resistant LLM — Searx + Scrapy Production Package
 
 This package implements an advanced RAG + Verification LLM pipeline with a fully open-source large-scale web search pipeline based on Searx and Scrapy.
@@ -23,3 +25,9 @@ Quick start:
    python src/ui.py
 
 See docs for full instructions and production deployment (Docker + Kubernetes).
+
+
+
+## Check the Article 
+
+https://zenodo.org/records/17212730?token=eyJhbGciOiJIUzUxMiJ9.eyJpZCI6IjgwNDQ5ODVmLWE4ZDQtNDg4MC1iMzZhLTQzZTE3MWQ1YzA0NCIsImRhdGEiOnt9LCJyYW5kb20iOiI2NTZjNGY1MzY1ZDQ4MTlmNzAzNDJkNWE0MDM4OGM5OCJ9.qWC7FkZHcbdswintggucmUJpClznv4nbdoPHGHTe4IyCBAcKx9nXvp-gYlZu9K-qFwTfvVWTt9Wh-2AmqAsDyg
