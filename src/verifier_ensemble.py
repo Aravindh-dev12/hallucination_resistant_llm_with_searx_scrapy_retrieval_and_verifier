@@ -13,8 +13,12 @@ class VerifierEnsemble:
     def __init__(self):
         self.tok1 = AutoTokenizer.from_pretrained(V1, use_fast=True)
         self.m1 = AutoModelForSequenceClassification.from_pretrained(V1).to(device)
-        self.tok2 = AutoTokenizer.from_pretrained(V2, use_fast=True)
-        self.m2 = AutoModelForSequenceClassification.from_pretrained(V2).to(device)
+        if V2 == V1:
+            self.tok2 = self.tok1
+            self.m2 = self.m1
+        else:
+            self.tok2 = AutoTokenizer.from_pretrained(V2, use_fast=True)
+            self.m2 = AutoModelForSequenceClassification.from_pretrained(V2).to(device)
 
     @staticmethod
     def _labels(model, probabilities):
@@ -52,6 +56,8 @@ class VerifierEnsemble:
 
     def classify(self, premise, hypothesis):
         first = self._classify_one(self.tok1, self.m1, premise, hypothesis)
+        if self.m2 is self.m1:
+            return first
         second = self._classify_one(self.tok2, self.m2, premise, hypothesis)
         return {
             label: (first[label] + second[label]) / 2.0
@@ -63,5 +69,4 @@ class VerifierEnsemble:
 
     def score(self, claim, evidence_list):
         scores = [self.entail_score(evidence, claim) for evidence in evidence_list]
-        # A claim needs one supporting passage; unrelated passages must not dilute it.
         return (max(scores) if scores else 0.0), scores
