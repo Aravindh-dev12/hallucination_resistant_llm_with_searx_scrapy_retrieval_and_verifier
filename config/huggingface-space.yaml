@@ -1,0 +1,30 @@
+model:
+  generator_instruct: "Qwen/Qwen2.5-0.5B-Instruct"
+  generator_large: "Qwen/Qwen2.5-0.5B-Instruct"
+  embedding: "sentence-transformers/all-MiniLM-L6-v2"
+  cross_encoder: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+  verifier_1: "cross-encoder/nli-deberta-v3-small"
+  verifier_2: "cross-encoder/nli-deberta-v3-small"
+  asr: "openai/whisper-tiny"
+
+data:
+  raw_dir: "data/sources"
+  processed_dir: "data/processed"
+  index_path: "data/faiss_index.bin"
+  docs_jsonl: "data/processed/docs.jsonl"
+
+retrieval:
+  candidate_k: 20
+  rerank_top_k: 10
+  evidence_k: 5
+  fusion_weights: [1.0, 1.0]
+  rrf_rank_constant: 60
+
+verification:
+  entailment_threshold: 0.72
+  contradiction_threshold: 0.60
+  corrective_retries: 1
+
+inference:
+  max_tokens: 256
+  temperature: 0.0
