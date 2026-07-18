@@ -8,7 +8,7 @@ on:
       - "src/**"
       - "config/**"
       - "docs/**"
-      - "requirements.txt"
+      - "requirements-space.txt"
       - ".github/workflows/deploy-huggingface.yml"
 
 permissions:
@@ -46,14 +46,15 @@ jobs:
         run: |
           git clone "https://Aravindhan11:$HF_TOKEN@huggingface.co/spaces/$HF_SPACE" space
 
-      - name: Update reliability implementation
+      - name: Update CPU Space implementation
         shell: bash
         run: |
           mkdir -p space/src space/config space/docs
           cp -R source/src/. space/src/
           cp -R source/config/. space/config/
           cp -R source/docs/. space/docs/
-          cp source/requirements.txt space/requirements.txt
+          cp source/requirements-space.txt space/requirements.txt
+          cp source/config/huggingface-space.yaml space/src/config.yaml
 
       - name: Commit and push existing Space
         working-directory: space
@@ -66,5 +67,5 @@ jobs:
             echo "Space is already up to date"
             exit 0
           fi
-          git commit -m "Deploy reliability and governance upgrade"
+          git commit -m "Deploy CPU-compatible reliability upgrade"
           git push origin HEAD:main
