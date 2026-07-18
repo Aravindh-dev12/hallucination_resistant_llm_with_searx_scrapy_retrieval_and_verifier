@@ -32,6 +32,11 @@ jobs:
           path: source
 
       - name: Require Hugging Face deployment secret
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          test -n "$HF_TOKEN" || {
+            echo "HF_TOKEN repository secret is missing"
         run: |
           test -n "$HF_TOKEN" || {
             echo "No Hugging Face token found in Actions repository secrets."
@@ -40,6 +45,8 @@ jobs:
           }
 
       - name: Clone existing Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           git clone "https://Aravindhan11:$HF_TOKEN@huggingface.co/spaces/$HF_SPACE" space
 
@@ -53,6 +60,8 @@ jobs:
 
       - name: Commit and push existing Space
         working-directory: space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
