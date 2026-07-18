@@ -25,6 +25,7 @@ jobs:
     env:
       HF_SPACE: Aravindhan11/hallucination_resistant_llm_with_searx_scrapy_retrieval_and_verifier_ensemble
       HF_TOKEN: ${{ secrets.HF_TOKEN || secrets.HUGGINGFACE_TOKEN || secrets.HUGGING_FACE_HUB_TOKEN }}
+
     steps:
       - name: Check out GitHub source
         uses: actions/checkout@v4
@@ -32,25 +33,21 @@ jobs:
           path: source
 
       - name: Require Hugging Face deployment secret
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        shell: bash
         run: |
-          test -n "$HF_TOKEN" || {
-            echo "HF_TOKEN repository secret is missing"
-        run: |
-          test -n "$HF_TOKEN" || {
+          if [ -z "$HF_TOKEN" ]; then
             echo "No Hugging Face token found in Actions repository secrets."
             echo "Accepted names: HF_TOKEN, HUGGINGFACE_TOKEN, HUGGING_FACE_HUB_TOKEN"
             exit 1
-          }
+          fi
 
       - name: Clone existing Space
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        shell: bash
         run: |
           git clone "https://Aravindhan11:$HF_TOKEN@huggingface.co/spaces/$HF_SPACE" space
 
       - name: Update reliability implementation
+        shell: bash
         run: |
           mkdir -p space/src space/config space/docs
           cp -R source/src/. space/src/
@@ -60,8 +57,7 @@ jobs:
 
       - name: Commit and push existing Space
         working-directory: space
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
