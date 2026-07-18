@@ -1,0 +1,20 @@
+schema_version: 1
+# Runtime availability is not training admission and grants no promotion authority.
+models:
+  vibethinker:
+    provider: openai_compatible
+    model: WeiboAI/VibeThinker-3B
+    base_url: http://127.0.0.1:8000/v1
+    purpose: candidate_generation
+    enabled: false
+  thinkcoder:
+    provider: openai_compatible
+    model: REPLACE_WITH_PINNED_THINKCODER_ID
+    base_url: http://127.0.0.1:8001/v1
+    purpose: candidate_generation
+    enabled: false
+  local_verifier:
+    provider: transformers
+    model: facebook/bart-large-mnli
+    purpose: entailment_verification
+    enabled: true
