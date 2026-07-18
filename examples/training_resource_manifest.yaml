@@ -1,0 +1,13 @@
+schema_version: 1
+resources:
+  - name: VibeThinker
+    role: training_resource
+    version: "3B@sha256:REPLACE_WITH_WEIGHT_DIGEST"
+    source_uri: "https://github.com/WeiboAI/VibeThinker"
+    license_id: MIT
+    content_digest: "sha256:REPLACE_WITH_RECORD_DIGEST"
+    provenance_accepted: false
+    verifier_receipts: []
+    capabilities:
+      - verifiable_math
+      - algorithmic_coding

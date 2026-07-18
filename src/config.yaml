@@ -13,9 +13,18 @@ data:
   index_path: "data/faiss_index.bin"
   docs_jsonl: "data/processed/docs.jsonl"
 
+retrieval:
+  candidate_k: 30
+  rerank_top_k: 15
+  evidence_k: 8
+  fusion_weights: [1.0, 1.0]
+  rrf_rank_constant: 60
+
+verification:
+  entailment_threshold: 0.72
+  contradiction_threshold: 0.60
+  corrective_retries: 1
+
 inference:
-  k_retrieval: 10
-  rerank_top_k: 20
   max_tokens: 512
   temperature: 0.0
-  verifier_threshold: 0.65

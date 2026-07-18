@@ -1,0 +1,74 @@
+schema_version: 1
+policy:
+  default_action: deny
+  training_admission:
+    compatible_licenses:
+      - MIT
+      - Apache-2.0
+      - BSD-2-Clause
+      - BSD-3-Clause
+    required_verifiers: 1
+    requires:
+      - provenance_accepted
+      - license_compatible
+      - immutable_content_digest
+      - verifier_backed_receipt
+  checkpoint_promotion:
+    independent_quorum: 2
+    require_consent: true
+    requires:
+      - independent_quorum
+      - consent_receipt
+      - sandbox_execution_receipt
+      - formal_verification_receipt
+      - audit_receipt
+
+resources:
+  - name: VibeThinker
+    role: training_resource
+    incorporation: records_only
+  - name: ThinkCoder
+    role: training_resource
+    incorporation: records_only
+  - name: Prime-RL
+    role: training_resource
+    incorporation: records_only
+  - name: Prime-Verifiers
+    role: training_resource
+    incorporation: records_only
+  - name: ShinkaEvolve
+    role: training_resource
+    incorporation: records_only
+  - name: Monty
+    role: training_resource
+    incorporation: records_only
+  - name: Megatron-LM
+    role: training_resource
+    incorporation: records_only
+  - name: V-JEPA-2.1
+    role: perception_service
+    governed_by: oeon-kernel
+  - name: LeWM
+    role: world_state_service
+    governed_by: oeon-kernel
+
+kernel_services:
+  - aegis
+  - memory
+  - consent
+  - formal_verification
+  - sandbox_execution
+  - audit_receipts
+
+coordinators:
+  - name: Tinton
+    may:
+      - coordinate_candidates
+      - request_evaluation
+      - submit_candidate
+    may_not:
+      - authorize_itself
+      - bypass_kernel_gates
+      - approve_own_candidate
+      - promote_checkpoint
+      - silently_fuse_external_code_or_weights
