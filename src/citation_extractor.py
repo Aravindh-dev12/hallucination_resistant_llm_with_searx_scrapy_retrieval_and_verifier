@@ -1,13 +1,29 @@
-import re
-def extract_citations(answer, evidence_list):
-    hits=[]
-    ans = answer.lower()
-    for i, ev in enumerate(evidence_list):
-        ev_lower = ev.lower()
-        for sent in ev_lower.split('.'):
-            s = sent.strip()
-            if not s or len(s) < 20: continue
-            if s[:20] in ans or s in ans:
-                hits.append({'idx':i, 'snippet': ev[:400]})
-                break
-    return hits
+"""Build citations only from verified claim-to-evidence bindings."""
+
+
+def citations_from_claims(claim_results):
+    citations = []
+    seen = set()
+    for result in claim_results:
+        if result.get("status") != "supported":
+            continue
+        key = (result.get("claim_id"), result.get("evidence_id"))
+        if key in seen:
+            continue
+        seen.add(key)
+        citations.append(
+            {
+                "claim_id": result.get("claim_id"),
+                "idx": result.get("evidence_id"),
+                "source": result.get("source"),
+                "snippet": result.get("passage", ""),
+                "entailment_score": result.get("score", 0.0),
+            }
+        )
+    return citations
+
+
+def extract_citations(_answer, _evidence_list):
+    raise RuntimeError(
+        "string-matching citations were removed; use citations_from_claims"
+    )
