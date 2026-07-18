@@ -40,31 +40,46 @@ def verify_claims(
         for evidence_id, document in enumerate(evidence):
             scores = dict(classify(str(document.get("text", "")), claim))
             candidates.append((evidence_id, document, scores))
-        best = max(
+
+        strongest_contradiction = max(
             candidates,
-            key=lambda item: (
-                item[2].get("entailment", 0.0)
-                - item[2].get("contradiction", 0.0)
-            ),
+            key=lambda item: item[2].get("contradiction", 0.0),
             default=None,
         )
-        if best is None:
+        strongest_support = max(
+            candidates,
+            key=lambda item: item[2].get("entailment", 0.0),
+            default=None,
+        )
+
+        contradiction_score = (
+            float(strongest_contradiction[2].get("contradiction", 0.0))
+            if strongest_contradiction
+            else 0.0
+        )
+        entailment_score = (
+            float(strongest_support[2].get("entailment", 0.0))
+            if strongest_support
+            else 0.0
+        )
+
+        if contradiction_score >= contradiction_threshold:
+            evidence_id, document, _scores = strongest_contradiction
+            status, score = "contradicted", contradiction_score
+        elif entailment_score >= entailment_threshold:
+            evidence_id, document, _scores = strongest_support
+            status, score = "supported", entailment_score
+        elif strongest_support:
+            evidence_id, document, _scores = strongest_support
+            status, score = "insufficient", entailment_score
+        else:
             status, score, evidence_id, document = (
                 "insufficient",
                 0.0,
                 None,
                 {},
             )
-        else:
-            evidence_id, document, scores = best
-            entailment = float(scores.get("entailment", 0.0))
-            contradiction = float(scores.get("contradiction", 0.0))
-            if contradiction >= contradiction_threshold:
-                status, score = "contradicted", contradiction
-            elif entailment >= entailment_threshold:
-                status, score = "supported", entailment
-            else:
-                status, score = "insufficient", entailment
+
         results.append(
             {
                 "claim_id": claim_id,
