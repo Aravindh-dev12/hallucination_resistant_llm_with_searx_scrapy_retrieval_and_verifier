@@ -5,15 +5,22 @@ import re
 from typing import Callable, Mapping, Sequence
 
 SENTENCE_RE = re.compile(r"(?<=[.!?])\s+|\n+")
+NON_CLAIM_PATTERNS = (
+    re.compile(r"^(?:i\s+)?(?:do not|don't|cannot|can't)\s+(?:know|verify|confirm)", re.I),
+    re.compile(r"^(?:insufficient|not enough)\s+evidence", re.I),
+)
 
 
 def extract_atomic_claims(answer: str) -> list[str]:
     claims: list[str] = []
     for sentence in SENTENCE_RE.split(answer.strip()):
         sentence = sentence.strip(" \t-*")
-        if not sentence or len(sentence.split()) < 3:
+        if (
+            not sentence
+            or len(sentence.split()) < 3
+            or any(pattern.search(sentence) for pattern in NON_CLAIM_PATTERNS)
+        ):
             continue
-        # Split simple conjunctions while retaining meaningful clauses.
         parts = re.split(r"\s*;\s*|\s+and\s+(?=[A-Z0-9])", sentence)
         claims.extend(part.strip() for part in parts if len(part.split()) >= 3)
     return claims
@@ -42,7 +49,12 @@ def verify_claims(
             default=None,
         )
         if best is None:
-            status, score, evidence_id, document = "insufficient", 0.0, None, {}
+            status, score, evidence_id, document = (
+                "insufficient",
+                0.0,
+                None,
+                {},
+            )
         else:
             evidence_id, document, scores = best
             entailment = float(scores.get("entailment", 0.0))
