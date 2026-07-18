@@ -1,0 +1,69 @@
+name: Deploy existing Hugging Face Space
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "config/**"
+      - "docs/**"
+      - "requirements.txt"
+      - ".github/workflows/deploy-huggingface.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: huggingface-space-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      HF_SPACE: Aravindhan11/hallucination_resistant_llm_with_searx_scrapy_retrieval_and_verifier_ensemble
+    steps:
+      - name: Check out GitHub source
+        uses: actions/checkout@v4
+        with:
+          path: source
+
+      - name: Require Hugging Face deployment secret
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          test -n "$HF_TOKEN" || {
+            echo "HF_TOKEN repository secret is missing"
+            exit 1
+          }
+
+      - name: Clone existing Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          git clone "https://Aravindhan11:$HF_TOKEN@huggingface.co/spaces/$HF_SPACE" space
+
+      - name: Update reliability implementation
+        run: |
+          mkdir -p space/src space/config space/docs
+          cp -R source/src/. space/src/
+          cp -R source/config/. space/config/
+          cp -R source/docs/. space/docs/
+          cp source/requirements.txt space/requirements.txt
+
+      - name: Commit and push existing Space
+        working-directory: space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src config docs requirements.txt
+          if git diff --cached --quiet; then
+            echo "Space is already up to date"
+            exit 0
+          fi
+          git commit -m "Deploy reliability and governance upgrade"
+          git push origin HEAD:main
