@@ -1,17 +1,27 @@
 schema_version: 1
 policy:
   default_action: deny
-  training_admission_requires:
-    - provenance_accepted
-    - license_compatible
-    - immutable_content_digest
-    - verifier_backed_receipt
-  checkpoint_promotion_requires:
-    - independent_quorum
-    - consent_receipt
-    - sandbox_execution_receipt
-    - formal_verification_receipt
-    - audit_receipt
+  training_admission:
+    compatible_licenses:
+      - MIT
+      - Apache-2.0
+      - BSD-2-Clause
+      - BSD-3-Clause
+    required_verifiers: 1
+    requires:
+      - provenance_accepted
+      - license_compatible
+      - immutable_content_digest
+      - verifier_backed_receipt
+  checkpoint_promotion:
+    independent_quorum: 2
+    require_consent: true
+    requires:
+      - independent_quorum
+      - consent_receipt
+      - sandbox_execution_receipt
+      - formal_verification_receipt
+      - audit_receipt
 
 resources:
   - name: VibeThinker
