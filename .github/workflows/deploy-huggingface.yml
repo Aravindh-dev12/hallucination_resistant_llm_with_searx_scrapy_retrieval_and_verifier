@@ -21,6 +21,7 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: HF_TOKEN
     timeout-minutes: 15
     env:
       HF_SPACE: Aravindhan11/hallucination_resistant_llm_with_searx_scrapy_retrieval_and_verifier_ensemble
@@ -36,8 +37,7 @@ jobs:
         shell: bash
         run: |
           if [ -z "$HF_TOKEN" ]; then
-            echo "No Hugging Face token found in Actions repository secrets."
-            echo "Accepted names: HF_TOKEN, HUGGINGFACE_TOKEN, HUGGING_FACE_HUB_TOKEN"
+            echo "No Hugging Face token found in the HF_TOKEN environment."
             exit 1
           fi
 
