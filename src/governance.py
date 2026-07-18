@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Iterable, Mapping, Sequence
@@ -75,19 +75,32 @@ class AuditReceipt:
         reasons: Sequence[str],
         previous_digest: str | None = None,
     ) -> "AuditReceipt":
-        payload = {
+        timestamp = datetime.now(timezone.utc).isoformat()
+        normalized_reasons = tuple(reasons)
+        signed_payload = {
             "event": event,
             "actor": actor,
             "subject": subject,
             "decision": decision.value,
-            "reasons": list(reasons),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "reasons": list(normalized_reasons),
+            "timestamp": timestamp,
             "previous_digest": previous_digest,
         }
         digest = hashlib.sha256(
-            json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+            json.dumps(
+                signed_payload, sort_keys=True, separators=(",", ":")
+            ).encode()
         ).hexdigest()
-        return cls(**payload, decision=decision, reasons=tuple(reasons), digest=digest)
+        return cls(
+            event=event,
+            actor=actor,
+            subject=subject,
+            decision=decision,
+            reasons=normalized_reasons,
+            timestamp=timestamp,
+            previous_digest=previous_digest,
+            digest=digest,
+        )
 
 
 @dataclass(frozen=True)
@@ -135,13 +148,11 @@ class KernelGate:
         formal_verification_receipt: str | None,
     ) -> AuditReceipt:
         reasons: list[str] = []
-        approvals = set(independent_approvals)
+        approvals = {item.lower() for item in independent_approvals}
 
-        if candidate.proposed_by.lower() == "tinton" and "tinton" in {
-            item.lower() for item in approvals
-        }:
+        if candidate.proposed_by.lower() == "tinton" and "tinton" in approvals:
             reasons.append("Tinton cannot approve its own candidate")
-        if len({a.lower() for a in approvals if a.lower() != "tinton"}) < self.policy.promotion_quorum:
+        if len(approvals - {"tinton"}) < self.policy.promotion_quorum:
             reasons.append("independent promotion quorum not met")
         if self.policy.require_consent and not candidate.consent_receipt:
             reasons.append("missing consent receipt")
@@ -149,6 +160,8 @@ class KernelGate:
             reasons.append("missing sandbox execution receipt")
         if not formal_verification_receipt:
             reasons.append("missing formal verification receipt")
+        if not candidate.evaluation_receipts:
+            reasons.append("missing candidate evaluation receipt")
 
         for digest in candidate.resource_digests:
             resource = approved_resources.get(digest)
@@ -170,7 +183,7 @@ class KernelGate:
 
 
 class TintonCoordinator:
-    """Coordinates candidates; deliberately exposes no authorization method."""
+    """Coordinates candidates; deliberately holds no authorization capability."""
 
     name = "tinton"
 
