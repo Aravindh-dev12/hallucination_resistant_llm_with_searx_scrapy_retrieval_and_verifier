@@ -4,28 +4,27 @@ from pipeline import Pipeline
 
 
 def build_ui():
-    state = {"pipeline": None, "error": None}
+    state = {"pipeline": None}
 
     def get_pipeline():
-        if state["pipeline"] is None and state["error"] is None:
-            try:
-                state["pipeline"] = Pipeline()
-            except Exception as exc:
-                state["error"] = str(exc)
+        if state["pipeline"] is None:
+            state["pipeline"] = Pipeline()
         return state["pipeline"]
 
     def respond(message, history):
         if not message or not message.strip():
             return ""
-
-        pipe = get_pipeline()
-        if pipe is None:
-            raise gr.Error(
-                "The verification pipeline could not start: "
-                + (state["error"] or "unknown initialization error")
+        try:
+            pipe = get_pipeline()
+            out = pipe.answer(message.strip())
+        except Exception as exc:
+            state["pipeline"] = None
+            return (
+                "The inference service could not complete this request. "
+                "It may still be warming up; please retry once.\n\n"
+                f"Technical detail: {type(exc).__name__}: {exc}"
             )
 
-        out = pipe.answer(message.strip())
         verification = out["verification"]
         display = (
             out["answer"]
@@ -49,7 +48,7 @@ def build_ui():
         gr.Markdown(
             "# Evidence-Grounded LLM\n"
             "Hybrid retrieval, claim verification, citations, and safe abstention. "
-            "The models load on the first request."
+            "The compact CPU models load on the first request."
         )
         gr.ChatInterface(
             fn=respond,
