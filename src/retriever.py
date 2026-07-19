@@ -1,5 +1,6 @@
 import json
 import os
+from pathlib import Path
 
 import faiss
 from sentence_transformers import SentenceTransformer
@@ -14,18 +15,55 @@ EMB = cfg["model"]["embedding"]
 
 
 class Retriever:
-    """Hybrid dense + BM25 retriever with reciprocal-rank fusion."""
+    """Hybrid dense + BM25 retriever with a Space-safe documentation fallback."""
 
     def __init__(self):
-        if not os.path.exists(INDEX):
-            raise FileNotFoundError(f"Index not found at {INDEX}. Build it first.")
-        self.index = faiss.read_index(INDEX)
-        with open(META, "r", encoding="utf-8") as handle:
-            self.meta = json.load(handle)
         self.embedder = SentenceTransformer(EMB)
+        if os.path.exists(INDEX) and os.path.exists(META):
+            self.index = faiss.read_index(INDEX)
+            with open(META, "r", encoding="utf-8") as handle:
+                self.meta = json.load(handle)
+        else:
+            self.meta = self._load_fallback_documents()
+            texts = [document["text"] for document in self.meta]
+            embeddings = self.embedder.encode(
+                texts, convert_to_numpy=True, normalize_embeddings=True
+            )
+            self.index = faiss.IndexFlatIP(embeddings.shape[1])
+            self.index.add(embeddings)
+
         self.lexical = BM25Index(
             [str(document.get("text", "")) for document in self.meta]
         )
+
+    @staticmethod
+    def _load_fallback_documents():
+        documents = []
+        for root in ("docs", "examples"):
+            for path in Path(root).rglob("*"):
+                if not path.is_file() or path.suffix.lower() not in {".md", ".txt"}:
+                    continue
+                try:
+                    text = path.read_text(encoding="utf-8", errors="ignore").strip()
+                except OSError:
+                    continue
+                if text:
+                    documents.append(
+                        {"id": str(path), "text": text[:12000], "source": str(path)}
+                    )
+        if not documents:
+            documents.append(
+                {
+                    "id": "deployment-fallback",
+                    "source": "built-in",
+                    "text": (
+                        "This system reduces hallucination through retrieval, "
+                        "claim-level entailment verification, citations, and safe "
+                        "abstention when evidence is insufficient."
+                    ),
+                }
+            )
+        return documents
 
     def retrieve(self, query, k=10):
         candidate_k = min(max(k * 4, k), len(self.meta))
