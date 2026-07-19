@@ -21,8 +21,8 @@ retrieval:
   rrf_rank_constant: 60
 
 verification:
-  entailment_threshold: 0.72
-  contradiction_threshold: 0.60
+  entailment_threshold: 0.55
+  contradiction_threshold: 0.70
   corrective_retries: 1
 
 inference:
