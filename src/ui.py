@@ -1,6 +1,13 @@
+import re
+
 import gradio as gr
 
 from pipeline import Pipeline
+
+GREETING_RE = re.compile(
+    r"^(hi|hello|hey|good\s+(morning|afternoon|evening)|how\s+are\s+you)[!.?\s]*$",
+    re.IGNORECASE,
+)
 
 
 def build_ui():
@@ -14,9 +21,18 @@ def build_ui():
     def respond(message, history):
         if not message or not message.strip():
             return ""
+
+        clean_message = message.strip()
+        if GREETING_RE.fullmatch(clean_message):
+            return (
+                "Hello! I’m ready. Ask me a factual question and I’ll retrieve "
+                "evidence, verify the claims, cite supported sources, and abstain "
+                "when reliable evidence is unavailable."
+            )
+
         try:
             pipe = get_pipeline()
-            out = pipe.answer(message.strip())
+            out = pipe.answer(clean_message)
         except Exception as exc:
             state["pipeline"] = None
             return (
@@ -48,7 +64,7 @@ def build_ui():
         gr.Markdown(
             "# Evidence-Grounded LLM\n"
             "Hybrid retrieval, claim verification, citations, and safe abstention. "
-            "The compact CPU models load on the first request."
+            "Greetings respond immediately; compact models load for factual requests."
         )
         gr.ChatInterface(
             fn=respond,
