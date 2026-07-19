@@ -1,28 +1,66 @@
-from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
 from utils import load_config
 
 cfg = load_config()
-MODEL = cfg['model']['generator_instruct']
+MODEL = cfg["model"]["generator_instruct"]
+
 
 class InstructGenerator:
     def __init__(self, model_name=None, device=None, low_memory=False):
         self.model_name = model_name or MODEL
-        self.device = device or ('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, use_fast=True)
-        try:
-            load_kwargs = {}
-            if self.device.startswith('cuda') and low_memory:
-                load_kwargs.update({'device_map':'auto', 'load_in_8bit':True})
-            self.model = AutoModelForCausalLM.from_pretrained(self.model_name, **load_kwargs).to(self.device)
-        except Exception as e:
-            print('Load warning:', e)
-            self.model = AutoModelForCausalLM.from_pretrained(self.model_name).to(self.device)
-    def promptify(self, instruction, context=''):
-        return f"""You are an assistant. Use the context to answer.\n\nContext:\n{context}\n\nInstruction: {instruction}\n\nResponse:"""
-    def generate(self, instruction, context='', max_tokens=256, temperature=0.0):
-        prompt = self.promptify(instruction, context)
-        inputs = self.tokenizer(prompt, return_tensors='pt', truncation=True).to(self.device)
-        out = self.model.generate(**inputs, max_new_tokens=max_tokens, do_sample=(temperature>0.0), temperature=temperature, pad_token_id=self.tokenizer.eos_token_id)
-        text = self.tokenizer.decode(out[0], skip_special_tokens=True)
-        return text.split('Response:')[-1].strip()
+        self.model = AutoModelForCausalLM.from_pretrained(
+            self.model_name,
+            torch_dtype="auto",
+        ).to(self.device)
+        self.model.eval()
+
+    def _inputs(self, instruction, context):
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "Answer using only the supplied evidence. Give a concise answer "
+                    "of at most four sentences. Do not invent facts. If the evidence "
+                    "does not answer the question, say that it is insufficient."
+                ),
+            },
+            {
+                "role": "user",
+                "content": f"Evidence:\n{context}\n\nQuestion: {instruction}",
+            },
+        ]
+        if getattr(self.tokenizer, "chat_template", None):
+            prompt = self.tokenizer.apply_chat_template(
+                messages, tokenize=False, add_generation_prompt=True
+            )
+        else:
+            prompt = (
+                messages[0]["content"]
+                + "\n\n"
+                + messages[1]["content"]
+                + "\n\nAnswer:"
+            )
+        return self.tokenizer(
+            prompt,
+            return_tensors="pt",
+            truncation=True,
+            max_length=1800,
+        ).to(self.device)
+
+    def generate(self, instruction, context="", max_tokens=256, temperature=0.0):
+        inputs = self._inputs(instruction, context)
+        generation = {
+            "max_new_tokens": max_tokens,
+            "do_sample": temperature > 0.0,
+            "pad_token_id": self.tokenizer.eos_token_id,
+        }
+        if temperature > 0.0:
+            generation["temperature"] = temperature
+        with torch.inference_mode():
+            output = self.model.generate(**inputs, **generation)
+        generated = output[0, inputs["input_ids"].shape[1] :]
+        return self.tokenizer.decode(generated, skip_special_tokens=True).strip()
