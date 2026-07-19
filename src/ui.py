@@ -3,22 +3,36 @@ import gradio as gr
 from pipeline import Pipeline
 
 
-def launch_ui():
-    pipe = Pipeline()
+def build_ui():
+    state = {"pipeline": None, "error": None}
 
-    def respond(chat_history, user_input):
-        if not user_input:
-            return chat_history, ""
-        chat_history = chat_history or []
-        chat_history.append(("User", user_input))
-        out = pipe.answer(user_input)
+    def get_pipeline():
+        if state["pipeline"] is None and state["error"] is None:
+            try:
+                state["pipeline"] = Pipeline()
+            except Exception as exc:
+                state["error"] = str(exc)
+        return state["pipeline"]
+
+    def respond(message, history):
+        if not message or not message.strip():
+            return ""
+
+        pipe = get_pipeline()
+        if pipe is None:
+            raise gr.Error(
+                "The verification pipeline could not start: "
+                + (state["error"] or "unknown initialization error")
+            )
+
+        out = pipe.answer(message.strip())
         verification = out["verification"]
         display = (
             out["answer"]
-            + f"\n\n[Status: {out['status']}]"
-            + f"\n[Claim faithfulness: {verification['faithfulness']:.3f}]"
-            + f"\n[Supported: {verification['supported_claims']}/"
-            + f"{verification['total_claims']}]"
+            + f"\n\n**Status:** {out['status']}"
+            + f"\n\n**Claim faithfulness:** {verification['faithfulness']:.3f}"
+            + f"\n\n**Supported:** {verification['supported_claims']}/"
+            + f"{verification['total_claims']}"
         )
         if out["citations"]:
             formatted = []
@@ -28,17 +42,30 @@ def launch_ui():
                     f"Claim {citation['claim_id']}: {source} "
                     f"(entailment {citation['entailment_score']:.3f})"
                 )
-            display += "\n\nVerified citations:\n- " + "\n- ".join(formatted)
-        chat_history.append(("Assistant", display))
-        return chat_history, ""
+            display += "\n\n**Verified citations:**\n- " + "\n- ".join(formatted)
+        return display
 
-    with gr.Blocks() as demo:
-        gr.Markdown("# Evidence-Grounded LLM — Hybrid Retrieval + Claim Verification")
-        chat = gr.Chatbot()
-        txt = gr.Textbox(placeholder="Ask a question...")
-        send = gr.Button("Send")
-        send.click(respond, inputs=[chat, txt], outputs=[chat, txt])
-    demo.launch(share=False, inbrowser=True)
+    with gr.Blocks(title="Hallucination-Resistant LLM") as demo:
+        gr.Markdown(
+            "# Evidence-Grounded LLM\n"
+            "Hybrid retrieval, claim verification, citations, and safe abstention."
+        )
+        gr.ChatInterface(
+            fn=respond,
+            examples=[
+                "How does retrieval reduce LLM hallucination?",
+                "What is claim-level verification?",
+            ],
+        )
+    return demo
+
+
+def launch_ui():
+    build_ui().queue().launch(
+        server_name="0.0.0.0",
+        server_port=7860,
+        share=False,
+    )
 
 
 if __name__ == "__main__":
