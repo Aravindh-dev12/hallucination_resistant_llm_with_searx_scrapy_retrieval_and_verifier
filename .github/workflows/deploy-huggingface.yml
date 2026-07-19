@@ -5,6 +5,7 @@ on:
   push:
     branches: [main]
     paths:
+      - "app.py"
       - "src/**"
       - "config/**"
       - "docs/**"
@@ -39,7 +40,7 @@ jobs:
         shell: bash
         run: |
           if [ -z "$HF_TOKEN" ]; then
-            echo "No Hugging Face token found in the HF_TOKEN environment."
+            echo "No Hugging Face token found. Add HF_TOKEN to the HF_TOKEN environment."
             exit 1
           fi
 
@@ -52,6 +53,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p space/src space/config space/docs space/notebooks space/examples
+          cp source/app.py space/app.py
           cp -R source/src/. space/src/
           cp -R source/config/. space/config/
           cp -R source/docs/. space/docs/
@@ -60,16 +62,22 @@ jobs:
           cp source/requirements-space.txt space/requirements.txt
           cp source/config/huggingface-space.yaml space/src/config.yaml
 
+      - name: Validate Space entry point
+        shell: bash
+        run: |
+          test -f space/app.py
+          python -m py_compile space/app.py space/src/ui.py
+
       - name: Commit and push existing Space
         working-directory: space
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src config docs notebooks examples requirements.txt
+          git add app.py src config docs notebooks examples requirements.txt
           if git diff --cached --quiet; then
             echo "Space is already up to date"
             exit 0
           fi
-          git commit -m "Deploy advanced reliability notebook"
+          git commit -m "Fix Hugging Face Space startup"
           git push origin HEAD:main
