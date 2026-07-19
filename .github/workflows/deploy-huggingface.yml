@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - "app.py"
+      - "SPACE_README.md"
       - "src/**"
       - "config/**"
       - "docs/**"
@@ -54,6 +55,7 @@ jobs:
         run: |
           mkdir -p space/src space/config space/docs space/notebooks space/examples
           cp source/app.py space/app.py
+          cp source/SPACE_README.md space/README.md
           cp -R source/src/. space/src/
           cp -R source/config/. space/config/
           cp -R source/docs/. space/docs/
@@ -66,7 +68,8 @@ jobs:
         shell: bash
         run: |
           test -f space/app.py
-          python -m py_compile space/app.py space/src/ui.py
+          grep -q "app_file: app.py" space/README.md
+          python -m py_compile space/app.py space/src/ui.py space/src/retriever.py
 
       - name: Commit and push existing Space
         working-directory: space
@@ -74,7 +77,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app.py src config docs notebooks examples requirements.txt
+          git add README.md app.py src config docs notebooks examples requirements.txt
           if git diff --cached --quiet; then
             echo "Space is already up to date"
             exit 0
