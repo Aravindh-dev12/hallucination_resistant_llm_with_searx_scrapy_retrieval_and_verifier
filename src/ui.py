@@ -48,14 +48,13 @@ def build_ui():
     with gr.Blocks(title="Hallucination-Resistant LLM") as demo:
         gr.Markdown(
             "# Evidence-Grounded LLM\n"
-            "Hybrid retrieval, claim verification, citations, and safe abstention."
+            "Hybrid retrieval, claim verification, citations, and safe abstention. "
+            "The models load on the first request."
         )
         gr.ChatInterface(
             fn=respond,
-            examples=[
-                "How does retrieval reduce LLM hallucination?",
-                "What is claim-level verification?",
-            ],
+            chatbot=gr.Chatbot(type="messages"),
+            type="messages",
         )
     return demo
 
@@ -65,6 +64,7 @@ def launch_ui():
         server_name="0.0.0.0",
         server_port=7860,
         share=False,
+        ssr_mode=False,
     )
 
 
